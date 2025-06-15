@@ -1,54 +1,36 @@
-import logging
+from telegram import Update, File
+from telegram.ext import ContextTypes
+from converter import convert_txt_to_vcf
 import os
-from dotenv import load_dotenv
-from telegram import Update, InputFile
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters,
-)
-from handler import convert_txt_to_vcf
 
-# Load .env
-load_dotenv()
-TOKEN = os.getenv("TELEGRAM_TOKEN")
-
-# Logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
-
-# Start
+# Fungsi untuk menangani perintah /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Halo! Kirim file .txt untuk dikonversi ke .vcf ✨")
+    await update.message.reply_text(
+        "Hai! 👋 Kirim file .txt kamu, nanti akan aku ubah jadi file .vcf (vCard kontak)."
+    )
 
-# Handler file
+# Fungsi untuk menangani dokumen/file
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     document = update.message.document
-    if document.mime_type != "text/plain":
-        await update.message.reply_text("Harap kirim file .txt saja.")
+
+    # Cek apakah file yang dikirim adalah file .txt
+    if document.mime_type != 'text/plain':
+        await update.message.reply_text("⚠️ Format file tidak didukung. Kirim file .txt saja.")
         return
 
-    file = await context.bot.get_file(document.file_id)
-    file_path = f"{document.file_name}"
-    await file.download_to_drive(file_path)
+    # Download file ke folder sementara
+    file_path = f"temp/{document.file_name}"
+    os.makedirs("temp", exist_ok=True)
 
-    output_path = convert_txt_to_vcf(file_path)
-    if output_path:
-        await update.message.reply_document(document=InputFile(output_path))
-        os.remove(file_path)
-        os.remove(output_path)
-    else:
-        await update.message.reply_text("Gagal mengonversi file.")
+    telegram_file: File = await context.bot.get_file(document.file_id)
+    await telegram_file.download_to_drive(file_path)
 
-# Main
-if __name__ == "__main__":
-    app = ApplicationBuilder().token(TOKEN).build()
+    # Ubah file txt ke vcf
+    vcf_path = convert_txt_to_vcf(file_path)
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
+    # Kirim hasil vcf ke user
+    await update.message.reply_document(document=open(vcf_path, "rb"))
 
-    print("Bot berjalan...")
-    app.run_polling()
+    # Hapus file sementara
+    os.remove(file_path)
+    os.remove(vcf_path)
