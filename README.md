@@ -5,11 +5,11 @@ from handler import register_handlers
 
 # Load token dari file .env
 load_dotenv()
-TOKEN = os.getenv("7968292523:AAE5p5Fm2hm56gpogQUv_ZKWJerJsjLfrVY")
+TOKEN = os.getenv("BOT_TOKEN")
 
 # Pastikan token terisi
 if not TOKEN:
-    raise ValueError("7968292523:AAE5p5Fm2hm56gpogQUv_ZKWJerJsjLfrVY")
+    raise ValueError("BOT_TOKEN tidak ditemukan di file .env")
 
 # Inisialisasi bot dan dispatcher
 bot = Bot(token=TOKEN)
