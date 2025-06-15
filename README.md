@@ -1,36 +1,32 @@
-import os
-from telegram import Update, InputFile
-from telegram.ext import ContextTypes
-from converter import txt_to_vcf
+# Arya CV Bot
 
-async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.document:
-        file = update.message.document
+Bot Telegram yang mengubah file `.txt` menjadi `.vcf` (contact vCard).  
+Cocok untuk membuat CV digital secara cepat dan otomatis.
 
-        if not file.file_name.endswith('.txt'):
-            await update.message.reply_text("❌ Silakan kirim file dengan format `.txt`.")
-            return
+## Fitur
+- Convert file `.txt` ke `.vcf`
+- Rename file sesuai permintaan user
+- Kirim file `.vcf` ke user langsung lewat Telegram
 
-        await update.message.reply_text("✅ File diterima! Sedang diproses...")
+## Cara Menggunakan
+1. Kirim file `.txt` ke bot Telegram
+2. Bot akan mengubah file menjadi `.vcf`
+3. File hasil dikirim kembali ke user
 
-        # Download file
-        file_path = await file.get_file()
-        input_file_path = f"downloads/{file.file_name}"
-        os.makedirs("downloads", exist_ok=True)
-        await file_path.download_to_drive(input_file_path)
+## Cara Menjalankan di Lokal
+1. **Aktifkan virtual environment:**
+   ```bash
+   .\venv\Scripts\activate
+2. **Install semua dependencies:**
+   ```bash
+   pip install -r requirement.txt
 
-        # Nama file output
-        output_filename = file.file_name.replace(".txt", ".vcf")
-        output_file_path = f"downloads/{output_filename}"
+## konfigurasi 
+•simpan token bot Telegram di file .env seperti ini: 
+BOT_TOKEN=7467759426:AAHOJhp5PbCUbUIZu79netuHbgrQ3n90ScY
 
-        try:
-            txt_to_vcf(input_file_path, output_file_path)
+## dibuat oleh 
+arya sastra✨
 
-            # Kirim file hasil
-            with open(output_file_path, "rb") as vcf_file:
-                await update.message.reply_document(
-                    document=InputFile(vcf_file, filename=output_filename),
-                    caption="✅ Berikut hasil konversi file .vcf kamu!"
-                )
-        except Exception as e:
-            await update.message.reply_text(f"❌ Gagal mengonversi file: {e}")
+## lisensi
+MIT license 
