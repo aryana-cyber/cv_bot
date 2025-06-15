@@ -1,19 +1,26 @@
-import logging
-from aiogram import Bot, Dispatcher, types
-from aiogram.utils import executor
-import os
-from dotenv import load_dotenv
+def txt_to_vcf(txt_file_path, vcf_file_path):
+    with open(txt_file_path, 'r', encoding='utf-8') as txt_file:
+        lines = txt_file.readlines()
 
-load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+    with open(vcf_file_path, 'w', encoding='utf-8') as vcf_file:
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
 
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot)
+            if ',' in line:
+                name, phone = line.split(',', 1)
+            elif ':' in line:
+                name, phone = line.split(':', 1)
+            else:
+                continue
 
-@dp.message_handler(commands=["start"])
-async def send_welcome(message: types.Message):
-    await message.reply("Bot berhasil dijalankan!")
+            name = name.strip()
+            phone = phone.strip()
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    executor.start_polling(dp, skip_updates=True)
+            vcf_file.write("BEGIN:VCARD\n")
+            vcf_file.write("VERSION:3.0\n")
+            vcf_file.write(f"N:{name};;;\n")
+            vcf_file.write(f"FN:{name}\n")
+            vcf_file.write(f"TEL;TYPE=CELL:{phone}\n")
+            vcf_file.write("END:VCARD\n\n")
