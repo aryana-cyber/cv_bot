@@ -1,26 +1,33 @@
-# Fungsi menangani balasan user (reply untuk format file)
-async def handle_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    format_str = update.message.text.strip()
-    file_path = context.user_data.get("file_path")
+# Fungsi /start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Hai 👋 Kirim file .txt atau .csv kamu...\n"
+        "Setelah itu aku bakal tanya format nama file output .vcf-nya ✨"
+    )
 
-    if not file_path:
-        await update.message.reply_text("❗ Maaf, aku belum nerima file apa pun sebelumnya.")
+# Fungsi menangani dokumen
+async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    document = update.message.document
+    file_name = document.file_name
+
+    if not file_name.endswith((".txt", ".csv")):
+        await update.message.reply_text("⚠️ Hanya mendukung file .txt atau .csv ya!")
         return
 
-    output_dir = "output"
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs("downloads", exist_ok=True)
+    file_path = os.path.join("downloads", file_name)
 
-    try:
-        # ✅ Panggil fungsi convert_to_vcf (bukan convert_txt_to_vcf)
-        from converter import convert_to_vcf
-        vcf_files = convert_to_vcf(file_path, format_str, output_dir)
+    file = await context.bot.get_file(document.file_id)
+    await file.download_to_drive(file_path)
 
-        # Kirim file .vcf satu per satu
-        for vcf_file in vcf_files:
-            with open(vcf_file, "rb") as f:
-                await update.message.reply_document(f)
+    context.user_data["file_path"] = file_path
 
-        await update.message.reply_text("✅ Semua file .vcf sudah aku kirim!")
-
-    except Exception as e:
-        await update.message.reply_text(f"❗ Terjadi error saat mengubah file: {e}")
+    await update.message.reply_text(
+        "✅ File berhasil diunduh.\n\n"
+        "Sekarang kirim format nama kontak seperti ini (contoh):\n"
+        "`{nama};{nomor}`\n\n"
+        "Contoh format:\n"
+        "`Arya Sastra;081234567890`\n\n"
+        "Kalo udah, langsung kirim ya!",
+        parse_mode="Markdown"
+    )
