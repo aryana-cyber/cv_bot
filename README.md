@@ -4,6 +4,7 @@ from handler import handle_document, handle_reply
 from dotenv import load_dotenv
 
 load_dotenv()
+print(f"TOKEN: {TOKEN}")
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 app = ApplicationBuilder().token(TOKEN).build()
