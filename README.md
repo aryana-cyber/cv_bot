@@ -1,33 +1,33 @@
-# Fungsi /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Hai 👋 Kirim file .txt atau .csv kamu...\n"
-        "Setelah itu aku bakal tanya format nama file output .vcf-nya ✨"
-    )
-
-# Fungsi menangani dokumen
-async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    document = update.message.document
-    file_name = document.file_name
-
-    if not file_name.endswith((".txt", ".csv")):
-        await update.message.reply_text("⚠️ Hanya mendukung file .txt atau .csv ya!")
+# Fungsi menangani balasan teks setelah file diunggah
+async def handle_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Ambil file_path dari user_data
+    file_path = context.user_data.get("file_path")
+    if not file_path:
+        await update.message.reply_text("⚠️ Kamu belum kirim file .txt atau .csv.")
         return
 
-    os.makedirs("downloads", exist_ok=True)
-    file_path = os.path.join("downloads", file_name)
+    # Ambil format string dari pesan user
+    format_str = update.message.text.strip()
 
-    file = await context.bot.get_file(document.file_id)
-    await file.download_to_drive(file_path)
+    # Buat folder output jika belum ada
+    output_dir = "output"
+    os.makedirs(output_dir, exist_ok=True)
 
-    context.user_data["file_path"] = file_path
+    try:
+        # Panggil fungsi konversi
+        from converter import convert_to_vcf  # pastikan nama fungsi sesuai
+        vcf_files = convert_to_vcf(file_path, format_str, output_dir)
 
-    await update.message.reply_text(
-        "✅ File berhasil diunduh.\n\n"
-        "Sekarang kirim format nama kontak seperti ini (contoh):\n"
-        "`{nama};{nomor}`\n\n"
-        "Contoh format:\n"
-        "`Arya Sastra;081234567890`\n\n"
-        "Kalo udah, langsung kirim ya!",
-        parse_mode="Markdown"
-    )
+        if not vcf_files:
+            await update.message.reply_text("❌ Gagal mengubah file. Pastikan format yang kamu kirim benar.")
+            return
+
+        # Kirim semua file .vcf hasil konversi
+        for vcf_file in vcf_files:
+            with open(vcf_file, "rb") as f:
+                await update.message.reply_document(document=f)
+
+        await update.message.reply_text("✅ Selesai! Semua file .vcf sudah dikirim.")
+    except Exception as e:
+        print(f"Error: {e}")
+        await update.message.reply_text("❌ Terjadi kesalahan saat mengubah file.")
