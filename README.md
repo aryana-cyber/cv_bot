@@ -1,34 +1,30 @@
-import os
-from telegram import Update
-from telegram.ext import ContextTypes
-from converter import convert_txt_to_vcf
+import logging
+from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, filters
+from handler import start, handle_document, handle_reply
 
-# Fungsi /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Hai! 👋 Kirim file .txt atau .csv kamu.\n"
-        "Setelah itu aku bakal tanya format nama file output .vcf-nya ✨"
-    )
+# Aktifkan logging (penting buat debugging)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
-# Fungsi menangani dokumen
-async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    document = update.message.document
+# Ganti token ini dengan token bot kamu
+BOT_TOKEN = "7954326302:AAH5TRKvfyW8WZq33Qad0E0icl6lo9SgtiA"
 
-    # Validasi jenis file
-    if not document.file_name.endswith((".txt", ".csv")):
-        await update.message.reply_text("⚠️ Hanya mendukung file .txt atau .csv ya!")
-        return
+def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Buat folder download jika belum ada
-    os.makedirs("downloads", exist_ok=True)
+    # Command /start
+    app.add_handler(CommandHandler("start", start))
 
-    # Simpan file ke folder download
-    file_path = os.path.join("downloads", document.file_name)
-    file = await context.bot.get_file(document.file_id)
-    await file.download_to_drive(file_path)
+    # Kalau user kirim file txt/csv
+    app.add_handler(MessageHandler(filters.Document.FILE_EXTENSION("txt") | filters.Document.FILE_EXTENSION("csv"), handle_document))
 
-    # Simpan file path ke user_data
-    context.user_data["file_path"] = file_path
+    # Kalau user reply format nama VCF
+    app.add_handler(MessageHandler(filters.TEXT & filters.REPLY, handle_reply))
 
-    # Tanya ke user nama file output-nya
-    await update.message.reply_text("✅ File diterima!\n\nKetik nama file .vcf yang kamu mau (tanpa spasi, tanpa .vcf):")
+    print("Bot sudah jalan...")
+    app.run_polling()
+
+if __name__ == '__main__':
+    main()
