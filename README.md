@@ -1,26 +1,21 @@
-def txt_to_vcf(txt_file_path, vcf_file_path):
-    with open(txt_file_path, 'r', encoding='utf-8') as txt_file:
-        lines = txt_file.readlines()
+import os import logging from telegram import Update, InputFile from telegram.ext import Application, MessageHandler, filters, CommandHandler, ContextTypes, CallbackContext from handler import handle_txt_file, handle_reply from dotenv import load_dotenv
 
-    with open(vcf_file_path, 'w', encoding='utf-8') as vcf_file:
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
+load_dotenv() logging.basicConfig(level=logging.INFO)
 
-            if ',' in line:
-                name, phone = line.split(',', 1)
-            elif ':' in line:
-                name, phone = line.split(':', 1)
-            else:
-                continue
+TOKEN = os.getenv("BOT_TOKEN")
 
-            name = name.strip()
-            phone = phone.strip()
+Simpan file sementara dan pesan file_id
 
-            vcf_file.write("BEGIN:VCARD\n")
-            vcf_file.write("VERSION:3.0\n")
-            vcf_file.write(f"N:{name};;;\n")
-            vcf_file.write(f"FN:{name}\n")
-            vcf_file.write(f"TEL;TYPE=CELL:{phone}\n")
-            vcf_file.write("END:VCARD\n\n")
+user_files = {}
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE): await update.message.reply_text("Halo! Kirim file .txt atau .csv kamu ke sini untuk mulai.")
+
+def main(): app = Application.builder().token(TOKEN).build()
+
+app.add_handler(CommandHandler("start", start))
+app.add_handler(MessageHandler(filters.Document.ALL, handle_txt_file))
+app.add_handler(MessageHandler(filters.TEXT & filters.REPLY, handle_reply))
+
+app.run_polling()
+
+if name == 'main': main()
